@@ -8,8 +8,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @MapperScan("com.example.borrower.*.mapper")
 public class BorrowerApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(BorrowerApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(BorrowerApplication.class, args);
+    }
 
 }
