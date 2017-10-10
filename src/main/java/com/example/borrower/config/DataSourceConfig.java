@@ -7,12 +7,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import javax.sql.DataSource;
 
 @Configuration
-@EnableTransactionManagement
 @Slf4j
 public class DataSourceConfig {
 
@@ -27,7 +25,7 @@ public class DataSourceConfig {
     @Bean
     @ConfigurationProperties(prefix = "spring.datasource.slave")
     public DataSource slaveDataSource() {
-        log.info("master datasource init ....");
+        log.info("slave datasource init ....");
         return DataSourceBuilder.create().type(DruidDataSource.class).build();
     }
 

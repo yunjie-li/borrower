@@ -23,7 +23,7 @@ public class LoginController {
     @RequestMapping(value = "/login", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public UserResponse login() {
         UserResponse userResponse = loginService.login();
-        log.info("user : ", userResponse);
+        log.info("user : {} ", userResponse);
         return userResponse;
     }
 

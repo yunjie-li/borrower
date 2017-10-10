@@ -1,19 +1,20 @@
 package com.example.borrower.interceptor;
 
-import com.example.borrower.annotation.SlaveConnection;
 import com.example.borrower.config.DbContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
-import org.springframework.core.Ordered;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.stereotype.Component;
 
 @Slf4j
+@Aspect
 @Component
-public class ReadOnlyConnectionInterceptor implements Ordered {
+public class ReadOnlyConnectionInterceptor {
 
-    @Around("@annotation(slaveConnection)")
-    public Object proceed(ProceedingJoinPoint proceedingJoinPoint, SlaveConnection slaveConnection) throws Throwable {
+    @Around("slaveConnectionAnnotation()")
+    public Object proceed(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
         try {
             log.info("set database connection to read only");
             DbContextHolder.setDbType(DbContextHolder.DbType.SLAVE);
@@ -25,9 +26,9 @@ public class ReadOnlyConnectionInterceptor implements Ordered {
         }
     }
 
-    @Override
-    public int getOrder() {
-        return 0;
+    @Pointcut("@annotation(com.example.borrower.annotation.SlaveConnection)")
+    public void slaveConnectionAnnotation() {
+
     }
 
 }

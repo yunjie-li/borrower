@@ -4,6 +4,7 @@ import org.apache.ibatis.mapping.DatabaseIdProvider;
 import org.apache.ibatis.plugin.Interceptor;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.aspectj.apache.bcel.util.ClassLoaderRepository;
+import org.mybatis.spring.SqlSessionTemplate;
 import org.mybatis.spring.boot.autoconfigure.ConfigurationCustomizer;
 import org.mybatis.spring.boot.autoconfigure.MybatisAutoConfiguration;
 import org.mybatis.spring.boot.autoconfigure.MybatisProperties;
@@ -12,6 +13,7 @@ import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
 
 import javax.annotation.Resource;
@@ -35,17 +37,27 @@ public class MybatisConfig extends MybatisAutoConfiguration {
 
     @Bean
     public SqlSessionFactory sqlSessionFactory() throws Exception {
-        return super.sqlSessionFactory(roundRobinDataSourceProxy());
+        return super.sqlSessionFactory(roundRobinDataSouceProxy());
     }
 
-    public AbstractRoutingDataSource roundRobinDataSourceProxy() {
+    @Bean
+    public SqlSessionTemplate sqlSessionTemplate(SqlSessionFactory sqlSessionFactory) {
+        return new SqlSessionTemplate(sqlSessionFactory);
+    }
+
+    public AbstractRoutingDataSource roundRobinDataSouceProxy() {
         ReadWriteRoutingDataSource proxy = new ReadWriteRoutingDataSource();
         Map<Object, Object> targetDataResources = new ClassLoaderRepository.SoftHashMap();
         targetDataResources.put(DbContextHolder.DbType.MASTER, masterDataSource);
         targetDataResources.put(DbContextHolder.DbType.SLAVE, slaveDataSource);
-        proxy.setDefaultTargetDataSource(masterDataSource);//默认源
+        proxy.setDefaultTargetDataSource(masterDataSource);
         proxy.setTargetDataSources(targetDataResources);
         return proxy;
+    }
+
+    @Bean
+    public DataSourceTransactionManager transactionManager() {
+        return new DataSourceTransactionManager(roundRobinDataSouceProxy());
     }
 
 }
