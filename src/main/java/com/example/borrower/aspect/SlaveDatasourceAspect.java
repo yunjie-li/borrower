@@ -1,4 +1,4 @@
-package com.example.borrower.interceptor;
+package com.example.borrower.aspect;
 
 import com.example.borrower.config.DbContextHolder;
 import lombok.extern.slf4j.Slf4j;
@@ -11,22 +11,20 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Aspect
 @Component
-public class ReadOnlyConnectionInterceptor {
+public class SlaveDatasourceAspect {
 
     @Around("slaveConnectionAnnotation()")
     public Object proceed(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
         try {
-            log.info("set database connection to read only");
-            DbContextHolder.setDbType(DbContextHolder.DbType.SLAVE);
-            Object result = proceedingJoinPoint.proceed();
-            return result;
+            DbContextHolder.MASTER = false;
+            DbContextHolder.setSlaveDataSourceName();
+            return proceedingJoinPoint.proceed();
         } finally {
-            DbContextHolder.clearDbType();
-            log.info("restore database connection");
+            DbContextHolder.clear();
         }
     }
 
-    @Pointcut("@annotation(com.example.borrower.annotation.SlaveConnection)")
+    @Pointcut("@annotation(com.example.borrower.annotation.SlaveDataSource)")
     public void slaveConnectionAnnotation() {
 
     }

@@ -5,9 +5,10 @@ import com.example.borrower.login.web.domain.UserResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * Created by yunjie on 17-6-23.
@@ -20,11 +21,16 @@ public class LoginController {
     @Autowired
     private LoginService loginService;
 
-    @RequestMapping(value = "/login", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public UserResponse login() {
-        UserResponse userResponse = loginService.login();
-        log.info("user : {} ", userResponse);
-        return userResponse;
+    @GetMapping(value = "/login", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public List<UserResponse> login() {
+        List<UserResponse> users = loginService.login();
+        log.info("user : {} ", users);
+        return users;
+    }
+
+    @GetMapping(value = "/register", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public Boolean register() {
+        return loginService.register();
     }
 
 }

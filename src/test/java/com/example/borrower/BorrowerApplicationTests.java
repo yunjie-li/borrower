@@ -9,6 +9,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 
+import java.util.List;
+
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = BorrowerApplication.class)
 @WebAppConfiguration
@@ -19,8 +21,8 @@ public class BorrowerApplicationTests {
 
     @Test
     public void contextLoads() {
-        UserResponse userResponse = loginService.login();
-        System.out.println("user:" + userResponse);
+        List<UserResponse> userResponse = loginService.login();
+        System.out.println("users:" + userResponse);
     }
 
 }

@@ -1,24 +1,32 @@
 package com.example.borrower.config;
 
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class DbContextHolder {
 
-    public enum DbType {
-        MASTER, SLAVE
+    private static final ThreadLocal<String> slaveDataSourceName = new ThreadLocal<>();
+
+    public static List<String> slaveDataSourceNames = null;
+
+    public static boolean HAS_SLAVE_DATA_SOURCE = false;
+
+    public static boolean MASTER = true;
+
+    private static AtomicInteger count = new AtomicInteger();
+
+    public static void setSlaveDataSourceName() {
+        if (HAS_SLAVE_DATA_SOURCE) {
+            slaveDataSourceName.set(slaveDataSourceNames.get(count.getAndAdd(1) % slaveDataSourceNames.size()));
+        }
     }
 
-    private static final ThreadLocal<DbType> contextHolder = new ThreadLocal<>();
-
-    public static void setDbType(DbType dbType) {
-        if (dbType == null) throw new NullPointerException();
-        contextHolder.set(dbType);
+    public static String getSlaveDataSourceName() {
+        return slaveDataSourceName.get();
     }
 
-    public static DbType getDbType() {
-        return contextHolder.get() == null ? DbType.MASTER : contextHolder.get();
-    }
-
-    public static void clearDbType() {
-        contextHolder.remove();
+    public static void clear() {
+        slaveDataSourceName.remove();
     }
 
 }

@@ -14,18 +14,10 @@ import javax.sql.DataSource;
 @Slf4j
 public class DataSourceConfig {
 
-    @Bean
     @Primary
-    @ConfigurationProperties(prefix = "spring.datasource.master")
+    @Bean(name = "masterDataSource")
+    @ConfigurationProperties(prefix = "spring.datasource")
     public DataSource masterDataSource() {
-        log.info("master datasource init ....");
-        return DataSourceBuilder.create().type(DruidDataSource.class).build();
-    }
-
-    @Bean
-    @ConfigurationProperties(prefix = "spring.datasource.slave")
-    public DataSource slaveDataSource() {
-        log.info("slave datasource init ....");
         return DataSourceBuilder.create().type(DruidDataSource.class).build();
     }
 
