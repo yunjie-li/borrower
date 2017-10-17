@@ -3,6 +3,8 @@ package com.example.borrower.config;
 import com.example.borrower.constants.CommonConstants;
 import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.MutablePropertyValues;
 import org.springframework.beans.factory.annotation.AnnotatedGenericBeanDefinition;
@@ -13,7 +15,6 @@ import org.springframework.beans.factory.support.BeanDefinitionReaderUtils;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
 import org.springframework.beans.factory.support.BeanNameGenerator;
-import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.bind.RelaxedPropertyResolver;
 import org.springframework.context.EnvironmentAware;
 import org.springframework.context.annotation.AnnotationBeanNameGenerator;
@@ -33,11 +34,24 @@ import java.util.Map;
  * @since 17-10-13.
  */
 @Configuration
-@AutoConfigureAfter(DataSourceConfig.class)
 @Slf4j
 public class MultipleDataSource implements BeanDefinitionRegistryPostProcessor, EnvironmentAware {
 
     private static final String DATASOURCE_TYPE_DEFAULT = "com.alibaba.druid.pool.DruidDataSource";
+
+    private static final String SLAVE_DATASOURCE_NAMES = "names";
+
+    private static final String DATASOURCE_TYPE_VALUE = "type";
+
+    private static final String DATASOURCE_DRIVER_CLASSNAME_VALUE = "driverClassName";
+
+    private static final String DATASOURCE_URL_VALUE = "url";
+
+    private static final String DATASOURCE_USERNAME_VALUE = "username";
+
+    private static final String DATASOURCE_PASSWORD_VALUE = "password";
+
+    private Map<String, Object> DATASOURCE_PROPERTIES = Maps.newHashMap();
 
     private Map<String, Map<String, Object>> dataSourceMap = Maps.newHashMap();
 
@@ -47,19 +61,19 @@ public class MultipleDataSource implements BeanDefinitionRegistryPostProcessor, 
 
     @Override
     public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry beanDefinitionRegistry) throws BeansException {
-        try {
-            if (dataSourceMap.isEmpty()) {
-                return;
-            }
-            for (Map.Entry<String, Map<String, Object>> entry : dataSourceMap.entrySet()) {
-                Object type = entry.getValue().get("type");
+        if (MapUtils.isNotEmpty(dataSourceMap)) {
+            dataSourceMap.forEach((slaveDataSourceName, dataSourceProperty) -> {
+                Object type = dataSourceProperty.get(DATASOURCE_TYPE_VALUE);
                 if (type == null) {
                     type = DATASOURCE_TYPE_DEFAULT;// 默认DataSource
                 }
-                registerBean(beanDefinitionRegistry, entry.getKey(), Class.forName(type.toString()));
-            }
-        } catch (ClassNotFoundException e) {
-            log.error("construct data source type exception:", e);
+                try {
+                    registerBean(beanDefinitionRegistry, slaveDataSourceName, Class.forName(type.toString()));
+                } catch (ClassNotFoundException e) {
+                    log.error("register slave datasource exception:", e);
+                }
+                DbContextHolder.SLAVE_DATASOURCE_NAMES.add(slaveDataSourceName);
+            });
         }
     }
 
@@ -81,36 +95,35 @@ public class MultipleDataSource implements BeanDefinitionRegistryPostProcessor, 
         BeanDefinitionReaderUtils.registerBeanDefinition(definitionHolder, registry);
     }
 
-
     @Override
     public void postProcessBeanFactory(ConfigurableListableBeanFactory configurableListableBeanFactory) throws BeansException {
-        configurableListableBeanFactory.getBeanDefinition("masterDataSource").setPrimary(true);
-        BeanDefinition beanDefinition;
-        Map<String, Object> dataSource;
-        for (Map.Entry<String, Map<String, Object>> entry : dataSourceMap.entrySet()) {
-            beanDefinition = configurableListableBeanFactory.getBeanDefinition(entry.getKey());
-            MutablePropertyValues mpv = beanDefinition.getPropertyValues();
-            dataSource = entry.getValue();
-            mpv.addPropertyValue("driverClassName", dataSource.get("driverClassName"));
-            mpv.addPropertyValue("url", dataSource.get("url"));
-            mpv.addPropertyValue("username", dataSource.get("username"));
-            mpv.addPropertyValue("password", dataSource.get("password"));
+        if (MapUtils.isNotEmpty(dataSourceMap)) {
+            dataSourceMap.forEach((slaveDataSourceName, dataSourceProperty) -> {
+                BeanDefinition beanDefinition = configurableListableBeanFactory.getBeanDefinition(slaveDataSourceName);
+                MutablePropertyValues mpv = beanDefinition.getPropertyValues();
+                Map<String, Object> values = Maps.newHashMap(DATASOURCE_PROPERTIES);
+                values.remove(DATASOURCE_TYPE_VALUE);
+                values.put(DATASOURCE_DRIVER_CLASSNAME_VALUE, dataSourceProperty.get(DATASOURCE_DRIVER_CLASSNAME_VALUE));
+                values.put(DATASOURCE_URL_VALUE, dataSourceProperty.get(DATASOURCE_URL_VALUE));
+                values.put(DATASOURCE_USERNAME_VALUE, dataSourceProperty.get(DATASOURCE_USERNAME_VALUE));
+                values.put(DATASOURCE_PASSWORD_VALUE, dataSourceProperty.get(DATASOURCE_PASSWORD_VALUE));
+                mpv.addPropertyValues(values);
+            });
         }
     }
 
     @Override
     public void setEnvironment(Environment environment) {
-        RelaxedPropertyResolver propertyResolver = new RelaxedPropertyResolver(environment, CommonConstants.SLAVE_DATASOURCE_PREFIX);
-        if (propertyResolver.getProperty(CommonConstants.SLAVE_DATASOURCE_NAMES) == null) {
-            return;
+        RelaxedPropertyResolver propertyResolver = new RelaxedPropertyResolver(environment, CommonConstants.SLAVE_DATASOURCE_PREFIX + CommonConstants.POINT_SEPARATOR);
+        if (propertyResolver.getProperty(SLAVE_DATASOURCE_NAMES) != null) {
+            DATASOURCE_PROPERTIES = new RelaxedPropertyResolver(environment, CommonConstants.SPRING_DATASOURCE_PREFIX).getSubProperties(CommonConstants.POINT_SEPARATOR);
+            List<String> slaveDataSourceNames = Arrays.asList(propertyResolver.getProperty(SLAVE_DATASOURCE_NAMES).replace(" ", "").split(CommonConstants.COMMA_SEPARATOR));
+            if (CollectionUtils.isNotEmpty(slaveDataSourceNames)) {
+                slaveDataSourceNames.forEach((slaveDataSourceName) ->
+                        dataSourceMap.put(slaveDataSourceName, propertyResolver.getSubProperties(CommonConstants.POINT_SEPARATOR + slaveDataSourceName + CommonConstants.POINT_SEPARATOR))
+                );
+            }
         }
-        DbContextHolder.HAS_SLAVE_DATA_SOURCE = true;
-        List<String> slaveDataSourceNames = Arrays.asList(propertyResolver.getProperty(CommonConstants.SLAVE_DATASOURCE_NAMES).replace(" ", "").split(CommonConstants.COMMA_SEPARATOR));
-        DbContextHolder.slaveDataSourceNames = slaveDataSourceNames;
-        slaveDataSourceNames.forEach((slaveDataSourceName) -> {
-            Map<String, Object> dsMap = propertyResolver.getSubProperties(slaveDataSourceName + CommonConstants.POINT_SEPARATOR);
-            dataSourceMap.put(slaveDataSourceName, dsMap);
-        });
     }
 
 }

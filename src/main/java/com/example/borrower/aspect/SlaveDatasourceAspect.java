@@ -8,6 +8,10 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.stereotype.Component;
 
+/**
+ * @author yunjie.
+ * @since 17-10-13.
+ */
 @Slf4j
 @Aspect
 @Component
@@ -17,7 +21,7 @@ public class SlaveDatasourceAspect {
     public Object proceed(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
         try {
             DbContextHolder.MASTER = false;
-            DbContextHolder.setSlaveDataSourceName();
+            DbContextHolder.setSlaveDataSource();
             return proceedingJoinPoint.proceed();
         } finally {
             DbContextHolder.clear();

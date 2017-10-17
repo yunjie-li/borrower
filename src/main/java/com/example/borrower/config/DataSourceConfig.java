@@ -10,6 +10,10 @@ import org.springframework.context.annotation.Primary;
 
 import javax.sql.DataSource;
 
+/**
+ * @author yunjie.
+ * @since 17-10-13.
+ */
 @Configuration
 @Slf4j
 public class DataSourceConfig {

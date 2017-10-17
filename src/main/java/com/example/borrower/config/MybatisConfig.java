@@ -1,7 +1,9 @@
 package com.example.borrower.config;
 
+import com.example.borrower.constants.CommonConstants;
 import com.example.borrower.utils.SpringContextUtil;
 import com.google.common.collect.Maps;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.ibatis.mapping.DatabaseIdProvider;
 import org.apache.ibatis.plugin.Interceptor;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -16,7 +18,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.annotation.Resource;
@@ -24,17 +25,20 @@ import javax.sql.DataSource;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * @author yunjie.
+ * @since 17-10-13.
+ */
 @AutoConfigureAfter(MultipleDataSource.class)
 @Configuration
 public class MybatisConfig extends MybatisAutoConfiguration {
 
-    @Resource(name = MASTER_DATA_SOURCE_KEY)
+    @Resource(name = CommonConstants.MASTER_DATASOURCE_NAME)
     private DataSource masterDataSource;
 
     @Autowired
     private SpringContextUtil springContextUtil;
 
-    private static final String MASTER_DATA_SOURCE_KEY = "masterDataSource";
 
     public MybatisConfig(MybatisProperties properties, ObjectProvider<Interceptor[]> interceptorsProvider, ResourceLoader resourceLoader,
                          ObjectProvider<DatabaseIdProvider> databaseIdProvider, ObjectProvider<List<ConfigurationCustomizer>> configurationCustomizersProvider) {
@@ -42,31 +46,17 @@ public class MybatisConfig extends MybatisAutoConfiguration {
     }
 
     @Bean(name = "roundRobinDataSourceProxy")
-    public AbstractRoutingDataSource roundRobinDataSourceProxy() {
-
+    public DataSourceRouting roundRobinDataSourceProxy() {
         Map<Object, Object> targetDataResources = Maps.newHashMap();
-        targetDataResources.put(MASTER_DATA_SOURCE_KEY, masterDataSource);
-
-        if (DbContextHolder.HAS_SLAVE_DATA_SOURCE) {
-            List<String> slaveDataSourceNames = DbContextHolder.slaveDataSourceNames;
+        targetDataResources.put(CommonConstants.MASTER_DATASOURCE_NAME, masterDataSource);
+        if (CollectionUtils.isNotEmpty(DbContextHolder.SLAVE_DATASOURCE_NAMES)) {
+            List<String> slaveDataSourceNames = DbContextHolder.SLAVE_DATASOURCE_NAMES;
             slaveDataSourceNames.forEach((slaveDataSourceName) -> {
                 DataSource slaveDataSource = (DataSource) springContextUtil.getBean(slaveDataSourceName);
                 targetDataResources.put(slaveDataSourceName, slaveDataSource);
             });
         }
-
-        AbstractRoutingDataSource proxy = new AbstractRoutingDataSource() {
-            @Override
-            protected Object determineCurrentLookupKey() {
-                if (DbContextHolder.MASTER) {
-                    return MASTER_DATA_SOURCE_KEY;
-                }
-                if (!DbContextHolder.HAS_SLAVE_DATA_SOURCE) {
-                    return MASTER_DATA_SOURCE_KEY;
-                }
-                return DbContextHolder.getSlaveDataSourceName();
-            }
-        };
+        DataSourceRouting proxy = new DataSourceRouting();
         proxy.setDefaultTargetDataSource(masterDataSource);
         proxy.setTargetDataSources(targetDataResources);
         proxy.afterPropertiesSet();
