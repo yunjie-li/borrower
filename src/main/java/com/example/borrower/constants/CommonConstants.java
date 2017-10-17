@@ -8,12 +8,14 @@ public class CommonConstants {
 
     public static final String SPRING_DATASOURCE_PREFIX = "spring.datasource";
 
-    public static final String SLAVE_DATASOURCE_PREFIX = "slave.datasource";
+    public static final String DEFAULT_DATASOURCE_NAME = "datasource";
+
+    public static final String CUSTOMER_DATASOURCE_PREFIX = "customer.datasource";
 
     public static final String POINT_SEPARATOR = ".";
 
     public static final String COMMA_SEPARATOR = ",";
 
-    public static final String MASTER_DATASOURCE_NAME = "masterDataSource";
+    public static final String SLAVE_DATASOURCE_NAME_PREFIX = "slave_";
 
 }

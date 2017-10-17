@@ -7,6 +7,10 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface SlaveDataSource {
+public @interface DynamicDataSource {
+
+    String name() default "";
 
 }
+
+

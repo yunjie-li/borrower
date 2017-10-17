@@ -1,8 +1,10 @@
 package com.example.borrower;
 
+import com.example.borrower.config.DynamicDataSourceRegister;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Import;
 
 /**
  * @author yunjie.
@@ -10,6 +12,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  */
 @SpringBootApplication
 @MapperScan("com.example.borrower.*.mapper")
+@Import({DynamicDataSourceRegister.class}) // 注册动态多数据源
 public class BorrowerApplication {
 
     public static void main(String[] args) {

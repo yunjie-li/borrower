@@ -21,6 +21,13 @@ public class LoginController {
     @Autowired
     private LoginService loginService;
 
+    @GetMapping(value = "/login_robin", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public List<UserResponse> loginRobin() {
+        List<UserResponse> users = loginService.loginRobin();
+        log.info("user : {} ", users);
+        return users;
+    }
+
     @GetMapping(value = "/login", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public List<UserResponse> login() {
         List<UserResponse> users = loginService.login();
@@ -30,7 +37,12 @@ public class LoginController {
 
     @GetMapping(value = "/register", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public Boolean register() {
-        return loginService.register();
+        try {
+            return loginService.register();
+        } catch (Exception e) {
+            log.error("exception:", e);
+        }
+        return Boolean.TRUE;
     }
 
 }

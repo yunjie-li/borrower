@@ -28,6 +28,6 @@ public interface LoginMapper {
     @Insert("INSERT INTO user (id, account, name, cellphone, email, create_date, update_date) VALUES (1, 'yunjie', '哈哈', '15434245753', '29445346@qq.com', '2017-09-30 18:23:01', '2017-09-30 18:23:01')")
     Boolean register();
 
-    @Update("update user set account = 'yunjie1' where id = 1")
+    @Update("update user set account = '234235' where id = 1")
     void update();
 }

@@ -1,6 +1,6 @@
 package com.example.borrower.login.service;
 
-import com.example.borrower.annotation.SlaveDataSource;
+import com.example.borrower.annotation.DynamicDataSource;
 import com.example.borrower.login.mapper.LoginMapper;
 import com.example.borrower.login.web.domain.UserResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,11 +18,17 @@ public class LoginService {
     @Autowired
     private LoginMapper loginMapper;
 
-    @SlaveDataSource
+    @DynamicDataSource(name = "datasource")
     public List<UserResponse> login() {
         return loginMapper.login();
     }
 
+    @DynamicDataSource()
+    public List<UserResponse> loginRobin() {
+        return loginMapper.login();
+    }
+
+    @DynamicDataSource(name = "abc_datasource")
     @Transactional(rollbackFor = Exception.class)
     public Boolean register() {
         loginMapper.update();
